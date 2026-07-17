@@ -289,13 +289,6 @@ body {
 	padding: 1.45rem;
 }
 
-.note-form-title {
-	margin: 0 0 0.95rem;
-	font-family: 'Sora', 'Manrope', sans-serif;
-	font-size: 1.35rem;
-	letter-spacing: -0.02em;
-}
-
 .note-form-fields {
 	display: grid;
 	gap: 0.9rem;
@@ -554,6 +547,29 @@ body {
 	padding: 0.22rem 0.56rem;
 }
 
+.note-card-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.edit-btn {
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
+	border-radius: 10px;
+	padding: 0.32rem;
+	cursor: pointer;
+	transition: background-color 220ms ease, color 220ms ease;
+	display: grid;
+	place-items: center;
+}
+
+.edit-btn:hover {
+	color: var(--primary-1);
+	background: color-mix(in srgb, var(--primary-2) 14%, transparent);
+}
+
 .delete-btn {
 	border: 0;
 	background: transparent;
@@ -572,6 +588,37 @@ body {
 .delete-icon {
 	width: 20px;
 	height: 20px;
+}
+
+.cancel-edit-btn {
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 0.82rem;
+	font-weight: 600;
+	cursor: pointer;
+	padding: 0.3rem 0.6rem;
+	border-radius: 8px;
+	transition: color 220ms ease, background-color 220ms ease;
+}
+
+.cancel-edit-btn:hover {
+	color: var(--danger);
+	background: var(--danger-soft);
+}
+
+.note-form-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.95rem;
+}
+
+.note-form-title {
+	margin: 0;
+	font-family: 'Sora', 'Manrope', sans-serif;
+	font-size: 1.35rem;
+	letter-spacing: -0.02em;
 }
 
 .note-body {

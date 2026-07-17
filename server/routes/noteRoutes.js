@@ -113,6 +113,60 @@ const findKeywordNotes = async (query) => {
   }).sort({ createdAt: -1 });
 };
 
+const findTextSearchNotes = async (query) => {
+  const cleanQuery = (query || '').trim();
+  if (!cleanQuery) return [];
+
+  // MongoDB full-text search with relevance scoring
+  try {
+    const textResults = await Note.find(
+      { $text: { $search: cleanQuery } },
+      { score: { $meta: 'textScore' } }
+    )
+      .sort({ score: { $meta: 'textScore' } })
+      .limit(30);
+
+    if (textResults.length > 0) return textResults;
+  } catch {
+    // text index may not be built yet, fall through to regex
+  }
+
+  // Fallback to regex if text search returns nothing
+  return findKeywordNotes(cleanQuery);
+};
+
+const extractJsonField = (text, fieldName) => {
+  if (!text) return [];
+
+  const tryParse = (candidate) => {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (!Array.isArray(parsed?.[fieldName])) return [];
+      return parsed[fieldName]
+        .map((id) => String(id).trim())
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  };
+
+  const direct = tryParse(text);
+  if (direct.length) return direct;
+
+  const fenced = text.match(/```json\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) {
+    const fromFence = tryParse(fenced[1]);
+    if (fromFence.length) return fromFence;
+  }
+
+  const objectMatch = text.match(/\{[\s\S]*\}/);
+  if (objectMatch?.[0]) {
+    return tryParse(objectMatch[0]);
+  }
+
+  return [];
+};
+
 const extractSelectedIds = (text) => {
   if (!text) return [];
 
@@ -154,98 +208,21 @@ router.get('/search-ai', async (req, res) => {
       return res.json({ mode: 'normal', notes });
     }
 
-    const allNotes = await Note.find().sort({ createdAt: -1 });
-    if (!allNotes.length) {
+    // Search the database using the query (case-insensitive regex)
+    const dbResults = await findKeywordNotes(query);
+
+    if (!dbResults.length) {
       return res.json({ mode: 'normal', notes: [] });
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      const fallbackNotes = await findKeywordNotes(query);
-      return res.json({
-        mode: 'fallback',
-        notes: fallbackNotes,
-        warning: 'OPENROUTER_API_KEY missing. Showing normal search results.',
-      });
-    }
-
-    const candidates = allNotes.slice(0, 80).map((note) => ({
-      id: String(note._id),
-      title: note.title,
-      subject: note.subject || '',
-      contentPreview: (note.content || '').slice(0, 280),
-      summaryPreview: (note.summary || '').slice(0, 200),
-    }));
-
-    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || 'nvidia/llama-nemotron-rerank-vl-1b-v2:free',
-        max_tokens: 250,
-        temperature: 0,
-        messages: [
-          {
-            role: 'system',
-            content: 'You rank note relevance for search. Return only JSON.',
-          },
-          {
-            role: 'user',
-            content: `User query: ${query}\n\nChoose up to 12 most relevant note IDs from the candidate notes.\nReturn JSON only in this shape:\n{"selectedIds":["id1","id2"]}\n\nCandidate notes:\n${JSON.stringify(candidates)}`,
-          },
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorData = await aiResponse.text();
-      console.error('AI search provider error:', errorData);
-      const fallbackNotes = await findKeywordNotes(query);
-      return res.json({
-        mode: 'fallback',
-        notes: fallbackNotes,
-        warning: 'AI search failed. Showing normal search results.',
-      });
-    }
-
-    const data = await aiResponse.json();
-    const content = data?.choices?.[0]?.message?.content || '';
-    const selectedIds = extractSelectedIds(content);
-
-    if (!selectedIds.length) {
-      const fallbackNotes = await findKeywordNotes(query);
-      return res.json({
-        mode: 'fallback',
-        notes: fallbackNotes,
-        warning: 'AI search returned invalid format. Showing normal search results.',
-      });
-    }
-
-    const byId = new Map(allNotes.map((note) => [String(note._id), note]));
-    const rankedNotes = selectedIds
-      .map((id) => byId.get(id))
-      .filter(Boolean);
-
-    if (!rankedNotes.length) {
-      const fallbackNotes = await findKeywordNotes(query);
-      return res.json({
-        mode: 'fallback',
-        notes: fallbackNotes,
-        warning: 'No AI matches found. Showing normal search results.',
-      });
-    }
-
-    return res.json({ mode: 'ai', notes: rankedNotes });
+    return res.json({ mode: 'ai', notes: dbResults });
   } catch (error) {
     console.error('AI search error:', error);
     const fallbackNotes = await findKeywordNotes(String(req.query.q || ''));
     return res.json({
       mode: 'fallback',
       notes: fallbackNotes,
-      warning: 'AI search error. Showing normal search results.',
+      warning: 'Search error. Showing database search results.',
     });
   }
 });
@@ -276,8 +253,14 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const note = await Note.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+    const updateData = { ...req.body };
+
+    if (updateData.content) {
+      updateData.summary = '';
+    }
+
+    const note = await Note.findByIdAndUpdate(req.params.id, updateData, {
+      returnDocument: 'after',
       runValidators: true,
     });
 
@@ -326,25 +309,33 @@ router.post('/:id/summarize', async (req, res) => {
     if (!apiKey) {
       warning = 'OPENROUTER_API_KEY is not configured. Generated fallback summary.';
     } else {
-      try {
-        const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: process.env.OPENROUTER_MODEL || 'nvidia/llama-nemotron-rerank-vl-1b-v2:free',
-            max_tokens: 300,
-            temperature: 0.2,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a strict study assistant. Follow the requested output format exactly.',
-              },
-              {
-                role: 'user',
-                content: `Create a concise study output from this note.
+      const OPENROUTER_MODELS = [
+        process.env.OPENROUTER_MODEL,
+        'google/gemma-4-26b-a4b-it:free',
+        'nvidia/nemotron-nano-9b-v2:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+      ].filter(Boolean);
+
+      for (const model of OPENROUTER_MODELS) {
+        try {
+          const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: 300,
+              temperature: 0.2,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a strict study assistant. Follow the requested output format exactly.',
+                },
+                {
+                  role: 'user',
+                  content: `Create a concise study output from this note.
 
 Return plain text only in this exact format:
 Summary:
@@ -363,25 +354,26 @@ Note title: ${note.title}
 Note subject: ${note.subject || 'N/A'}
 Note content:
 ${note.content}`,
-              },
-            ],
-          }),
-        });
+                },
+              ],
+            }),
+          });
 
-        if (!aiResponse.ok) {
-          const errorData = await aiResponse.text();
-          console.error('OpenRouter API error:', errorData);
-          warning = 'AI provider failed. Generated fallback summary.';
-        } else {
-          const data = await aiResponse.json();
-          aiText = data?.choices?.[0]?.message?.content?.trim() || '';
-          if (!aiText) {
-            warning = 'AI response was empty. Generated fallback summary.';
+          if (aiResponse.ok) {
+            const data = await aiResponse.json();
+            aiText = data?.choices?.[0]?.message?.content?.trim() || '';
+            if (aiText) break;
+          } else {
+            const errorData = await aiResponse.text();
+            console.error(`OpenRouter summarize model ${model} error (${aiResponse.status}):`, errorData);
           }
+        } catch (providerError) {
+          console.error(`OpenRouter summarize model ${model} fetch error:`, providerError);
         }
-      } catch (providerError) {
-        console.error('OpenRouter request error:', providerError);
-        warning = 'AI request error. Generated fallback summary.';
+      }
+
+      if (!aiText) {
+        warning = 'AI provider failed. Generated fallback summary.';
       }
     }
 

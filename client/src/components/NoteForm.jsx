@@ -1,10 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const NoteForm = ({ onNoteAdded }) => {
+const NoteForm = ({ onNoteAdded, editingNote, onNoteUpdated, onCancelEdit }) => {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (editingNote) {
+      setTitle(editingNote.title || '')
+      setSubject(editingNote.subject || '')
+      setContent(editingNote.content || '')
+    } else {
+      setTitle('')
+      setSubject('')
+      setContent('')
+    }
+  }, [editingNote])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -12,23 +24,39 @@ const NoteForm = ({ onNoteAdded }) => {
 
     setSubmitting(true)
     try {
-      const res = await fetch('http://localhost:5000/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          subject: subject.trim(),
-          content: content.trim(),
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to create note')
-      const note = await res.json()
-      onNoteAdded(note)
-      setTitle('')
-      setSubject('')
-      setContent('')
+      if (editingNote) {
+        const res = await fetch(`http://localhost:5000/api/notes/${editingNote._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title.trim(),
+            subject: subject.trim(),
+            content: content.trim(),
+          }),
+        })
+        if (!res.ok) throw new Error('Failed to update note')
+        const note = await res.json()
+        onNoteUpdated(note)
+        onCancelEdit()
+      } else {
+        const res = await fetch('http://localhost:5000/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title.trim(),
+            subject: subject.trim(),
+            content: content.trim(),
+          }),
+        })
+        if (!res.ok) throw new Error('Failed to create note')
+        const note = await res.json()
+        onNoteAdded(note)
+        setTitle('')
+        setSubject('')
+        setContent('')
+      }
     } catch (err) {
-      console.error('Failed to add note:', err)
+      console.error('Failed to save note:', err)
     } finally {
       setSubmitting(false)
     }
@@ -36,7 +64,16 @@ const NoteForm = ({ onNoteAdded }) => {
 
   return (
     <form onSubmit={handleSubmit} className="panel-card note-form">
-      <h2 className="note-form-title">New Note</h2>
+      <div className="note-form-head">
+        <h2 className="note-form-title">
+          {editingNote ? 'Edit Note' : 'New Note'}
+        </h2>
+        {editingNote && (
+          <button type="button" onClick={onCancelEdit} className="cancel-edit-btn">
+            Cancel
+          </button>
+        )}
+      </div>
       <div className="note-form-fields">
         <input
           type="text"
@@ -66,7 +103,9 @@ const NoteForm = ({ onNoteAdded }) => {
           disabled={submitting}
           className="btn-gradient"
         >
-          {submitting ? 'Adding...' : 'Add Note'}
+          {submitting
+            ? (editingNote ? 'Updating...' : 'Adding...')
+            : (editingNote ? 'Update Note' : 'Add Note')}
         </button>
       </div>
     </form>

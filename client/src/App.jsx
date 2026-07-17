@@ -10,6 +10,7 @@ function App() {
   const [aiSearchLoading, setAiSearchLoading] = useState(false)
   const [aiSearchWarning, setAiSearchWarning] = useState('')
   const [aiSearchResults, setAiSearchResults] = useState([])
+  const [editingNote, setEditingNote] = useState(null)
   const [theme, setTheme] = useState('light')
 
   useEffect(() => {
@@ -78,6 +79,14 @@ function App() {
     setNotes((prev) => prev.filter((n) => n._id !== id))
   }
 
+  const handleStartEdit = (note) => {
+    setEditingNote(note)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingNote(null)
+  }
+
   const handleNoteUpdated = (updatedNote) => {
     setNotes((prev) =>
       prev.map((n) => (n._id === updatedNote._id ? updatedNote : n))
@@ -132,13 +141,14 @@ function App() {
         }
 
         const data = await res.json()
+        // Always store results regardless of mode (fallback/ai/normal)
         setAiSearchResults(Array.isArray(data.notes) ? data.notes : [])
         setAiSearchWarning(data.warning || '')
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.error('AI search error:', err)
-          setAiSearchResults([])
-          setAiSearchWarning('AI search failed. Try normal search mode.')
+          setAiSearchResults(filteredNotes) // fallback to filtered notes
+          setAiSearchWarning('AI search unavailable. Showing normal search results.')
         }
       } finally {
         setAiSearchLoading(false)
@@ -149,10 +159,11 @@ function App() {
       controller.abort()
       clearTimeout(timer)
     }
-  }, [search, searchMode])
+  }, [search, searchMode, filteredNotes])
 
+  // In AI mode, show AI search results. If they're empty, fallback to filtered notes.
   const displayNotes = searchMode === 'ai' && search.trim()
-    ? aiSearchResults
+    ? (aiSearchResults.length > 0 ? aiSearchResults : filteredNotes)
     : filteredNotes
 
   return (
@@ -192,7 +203,12 @@ function App() {
       <main className="app-container app-main">
         <aside className="hero-fade">
           <div className="hero-badge">AI-Powered Learning</div>
-          <NoteForm onNoteAdded={handleNoteAdded} />
+          <NoteForm
+            onNoteAdded={handleNoteAdded}
+            editingNote={editingNote}
+            onNoteUpdated={handleNoteUpdated}
+            onCancelEdit={handleCancelEdit}
+          />
         </aside>
 
         <section className="hero-fade delay-1">
@@ -235,7 +251,7 @@ function App() {
           </div>
           {searchMode === 'ai' && search.trim() && (
             <p className="search-mode-hint">
-              {aiSearchLoading ? 'AI is searching notes...' : aiSearchWarning || 'Showing AI-ranked results.'}
+              {aiSearchWarning || 'Showing AI-ranked results.'}
             </p>
           )}
 
@@ -243,13 +259,11 @@ function App() {
             <div className="loading-wrap">
               <div className="loading-spinner" />
             </div>
-          ) : aiSearchLoading ? (
-            <div className="loading-wrap">
-              <div className="loading-spinner" />
-            </div>
           ) : displayNotes.length === 0 ? (
             <div className="empty-state reveal-on-scroll is-visible">
-              {search ? (
+              {aiSearchLoading ? (
+                <p>AI is searching notes...</p>
+              ) : search ? (
                 <p>No notes match your search.</p>
               ) : (
                 <p>No notes yet - add your first one!</p>
@@ -263,7 +277,7 @@ function App() {
                   className="reveal-on-scroll"
                   style={{ '--stagger-delay': `${Math.min(index, 8) * 80}ms` }}
                 >
-                  <NoteCard note={note} onDelete={handleDelete} onSummarized={handleNoteUpdated} />
+                  <NoteCard note={note} onDelete={handleDelete} onSummarized={handleNoteUpdated} onEdit={handleStartEdit} />
                 </div>
               ))}
             </div>

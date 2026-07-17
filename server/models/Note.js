@@ -23,4 +23,7 @@ const noteSchema = new mongoose.Schema({
   },
 });
 
+// Create a text index for MongoDB full-text search with relevance scoring
+noteSchema.index({ title: 'text', subject: 'text', content: 'text', summary: 'text' });
+
 export default mongoose.model('Note', noteSchema);
