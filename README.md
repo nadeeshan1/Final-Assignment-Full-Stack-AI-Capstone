@@ -202,4 +202,19 @@ The response is saved to the note's `summary` field in MongoDB.
 ## 📝 License
 
 MIT
+## screan shots
+
+<img width="1919" height="869" alt="image" src="https://github.com/user-attachments/assets/85248503-fd1a-4132-8751-8a589cc3cfc5" />
+<img width="975" height="406" alt="image" src="https://github.com/user-attachments/assets/d21c459b-88a3-4a4f-9f8f-ad24ae97bc70" />
+<img width="975" height="441" alt="image" src="https://github.com/user-attachments/assets/e902ac6e-336f-4c08-93e0-34aa2dbba1d3" />
+<img width="975" height="444" alt="image" src="https://github.com/user-attachments/assets/a0b80700-9544-407c-9a11-8fc5df5ed6c7" />
+<img width="975" height="441" alt="image" src="https://github.com/user-attachments/assets/0908d70e-38cf-4e14-b635-60e29c6d8828" />
+<img width="975" height="441" alt="image" src="https://github.com/user-attachments/assets/11d12491-6e31-4a27-8964-01747e84c79d" />
+<img width="975" height="434" alt="image" src="https://github.com/user-attachments/assets/a4234942-2c8d-4158-b47c-096ea2cf18a4" />
+
+
+
+
+
+
 
