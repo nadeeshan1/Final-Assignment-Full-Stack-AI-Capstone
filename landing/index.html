@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate — AI-Powered Study Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div class="gradient-bg"></div>
+    <div class="floating-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+
+    <header class="header">
+      <div class="container header-inner">
+        <span class="logo">
+          <svg class="logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M12 6v7"/><path d="M9 9l3-3 3 3"/></svg>
+          StudyMate
+        </span>
+        <nav class="nav-links">
+          <a href="#features" class="nav-link">Features</a>
+        </nav>
+        <button id="theme-toggle" class="theme-btn" aria-label="Toggle theme">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-badge">AI-Powered Learning</div>
+        <h1 class="hero-title">Study<span class="gradient-text">Mate</span></h1>
+        <p class="hero-subtitle">Your intelligent study notes assistant — create, summarize, and master any subject with AI.</p>
+        <div class="hero-actions">
+          <a href="#" class="btn-primary">
+            Open App
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-heading">
+          <h2 class="section-title">Everything you need to study smarter</h2>
+          <p class="section-desc">Three powerful features to supercharge your learning workflow.</p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card reveal">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <h3 class="feature-title">Create &amp; Organize Notes</h3>
+            <p class="feature-desc">Write rich notes, categorize by subject, and keep everything perfectly organized in one beautiful place.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <h3 class="feature-title">AI Summaries &amp; Quizzes</h3>
+            <p class="feature-desc">Generate smart bullet-point summaries and practice quizzes from any note with a single click.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <h3 class="feature-title">AI-Powered Search &amp; Tools</h3>
+            <p class="feature-desc">Search instantly across all notes and let AI help you extract the most value from your materials.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <p>&copy; 2026 StudyMate. Built with passion for learning.</p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
